@@ -4,6 +4,22 @@ from transformers import BertTokenizer, BertModel
 import torch
 from torchvision import models, transforms
 from PIL import Image
+import torch.nn as nn
+
+class FusionClassifier(nn.Module):
+    def __init__(self):
+        super(FusionClassifier, self).__init__()
+        self.fc1 = nn.Linear(1280, 256)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.3)
+        self.fc2 = nn.Linear(256, 3)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.fc2(x)
+        return x
 
 # Load the labels
 df = pd.read_csv('labelResultAll.txt', sep='\t')
@@ -87,3 +103,14 @@ print(f"Image feature shape: {image_features.shape}")
 text_features_flat = text_features.squeeze(0)
 combined = torch.cat([text_features_flat, image_features], dim=0)
 print(f"Combined feature shape: {combined.shape}")
+
+# Initialize the clasifier
+classifier = FusionClassifier()
+print(classifier)
+
+# Test Classifier
+classifier.eval()
+with torch.no_grad():
+    prediction = classifier(combined)
+    print(f"Raw prediction shape: {prediction}")
+    print(f"Predicted class: {torch.argmax(prediction).item()}")
