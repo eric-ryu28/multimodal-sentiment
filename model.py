@@ -1,5 +1,7 @@
 import pandas as pd
 import os
+from transformers import BertTokenizer, BertModel
+import torch
 
 # Load the labels
 df = pd.read_csv('labelResultAll.txt', sep='\t')
@@ -39,3 +41,19 @@ for post_id in valid_ids:
 print(f"Example distribution: {pd.Series(labels).value_counts()}")
 print(f"Example label: {labels[0]} (should be 2 for neutral)")
 
+
+# Load BERT
+print("Loading BERT...")
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+bert_model = BertModel.from_pretrained('bert-base-uncased')
+bert_model.eval()
+print("BERT loaded.")
+
+# testing in one sentence
+sample = tokenizer(texts[0], return_tensors='pt',
+                   truncation=True, max_length=128, padding='max_length')
+with torch.no_grad():
+    output = bert_model(**sample)
+
+text_features = output.last_hidden_state[:, 0, :]
+print(f"Text feature shape: {text_features.shape}")
