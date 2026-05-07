@@ -2,6 +2,8 @@ import pandas as pd
 import os
 from transformers import BertTokenizer, BertModel
 import torch
+from torchvision import models, transforms
+from PIL import Image
 
 # Load the labels
 df = pd.read_csv('labelResultAll.txt', sep='\t')
@@ -57,3 +59,31 @@ with torch.no_grad():
 
 text_features = output.last_hidden_state[:, 0, :]
 print(f"Text feature shape: {text_features.shape}")
+
+# Load pretrained ResNet
+print("Loading ResNet...")
+resnet = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+resnet = torch.nn.Sequential(*list(resnet.children())[:-1])
+resnet.eval()
+print("ResNet loaded.")
+
+# Define image preprocessing
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+img = Image.open(f"data/{valid_ids[0]}.jpg").convert('RGB')
+img_tensor = transform(img).unsqueeze(0)
+
+with torch.no_grad():
+    image_features = resnet(img_tensor)
+
+image_features = image_features.squeeze()
+print(f"Image feature shape: {image_features.shape}")
+
+# Fusion text and image features
+text_features_flat = text_features.squeeze(0)
+combined = torch.cat([text_features_flat, image_features], dim=0)
+print(f"Combined feature shape: {combined.shape}")
