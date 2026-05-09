@@ -121,3 +121,67 @@ criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(classifier.parameters(), lr=0.001)
 
 print("Classifier ready.")
+
+
+# Training loop
+NUM_EPOCHS = 5
+classifier.train()
+
+for epoch in range(NUM_EPOCHS):
+    total_loss = 0
+    correct = 0
+    total = 0
+
+    for batch_idx, (input_ids, attention_mask, images, labels) in enumerate(train_loader):
+
+        # BERT text features
+        with torch.no_grad():
+            bert_output = bert_model(input_ids=input_ids, attention_mask=attention_mask)
+            text_features = bert_output.last_hidden_state[:, 0, :]
+            
+        # ResNet image features
+        with torch.no_grad():
+            image_features = resnet(images).squeeze(-1).squeeze(-1)
+
+        # Combine the features
+        combined = torch.cat([text_features, image_features], dim=1)
+
+        # Forward pass through classifier
+        predictions = classifier(combined)
+        loss = criterion(predictions, labels)
+
+        # Backward pass - update weights
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        # Track accuracy
+        total_loss += loss.item()
+        predicted_classes = torch.argmax(predictions, dim=1)
+        correct += (predicted_classes == labels).sum().item()
+        total += labels.size(0)
+
+        if batch_idx % 50 == 0:
+            print(f"Epoch {epoch+1}, Batch {batch_idx}, Loss: {loss.item():.4f}")
+
+    epoch_acc = correct / total * 100
+    print(f"Epoch {epoch+1} complete — Avg Loss: {total_loss/len(train_loader):.4f}, Accuracy: {epoch_acc:.2f}%")
+
+# Evaluation on test set
+classifier.eval()
+correct = 0
+total = 0
+
+with torch.no_grad():
+    for input_ids, attention_mask, images, labels in test_loader:
+        bert_output = bert_model(input_ids=input_ids, attention_mask=attention_mask)
+        text_features = bert_output.last_hidden_state[:, 0, :]
+        image_features = resnet(images).squeeze(-1).squeeze(-1)
+        combined = torch.cat([text_features, image_features], dim=1)
+        predictions = classifier(combined)
+        predicted_classes = torch.argmax(predictions, dim=1)
+        correct += (predicted_classes == labels).sum().item()
+        total += labels.size(0)
+
+        test_accuracy = correct / total * 100
+        print(f"Test Accuracy: {test_accuracy:.2f}%")
