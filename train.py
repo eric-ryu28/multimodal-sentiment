@@ -43,7 +43,11 @@ df[['text_label', 'image_label']] = df['text,image'].str.split(',', expand=True)
 df = df.drop(columns=['text,image'])
 
 def get_final_label(row):
-    return row['text_label']
+    if row['text_label'] == row['image_label']:
+        return row['text_label']
+    else:
+        return row['text_label']
+    # maybe weighted confidence fusion in the future? For now just using text label
 
 df['final_label'] = df.apply(get_final_label, axis=1)
 
@@ -183,5 +187,9 @@ with torch.no_grad():
         correct += (predicted_classes == labels).sum().item()
         total += labels.size(0)
 
-        test_accuracy = correct / total * 100
-        print(f"Test Accuracy: {test_accuracy:.2f}%")
+test_accuracy = correct / total * 100
+print(f"Test Accuracy: {test_accuracy:.2f}%")
+
+# Save the trained model
+torch.save(classifier.state_dict(), 'fusion_classifier.pth')
+print("Model saved to fusion_classifier.pth")

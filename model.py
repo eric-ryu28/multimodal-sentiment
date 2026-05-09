@@ -27,7 +27,10 @@ df[['text_label', 'image_label']] = df['text,image'].str.split(',', expand=True)
 df = df.drop(columns=['text,image'])
 
 def get_final_label(row):
-    return row['text_label']
+    if row['text_label'] == row['image_label']:
+        return row['text_label']
+    else:
+        return row['text_label']
 
 df['final_label'] = df.apply(get_final_label, axis=1)
 

@@ -21,5 +21,20 @@ to each other
 - ResNet (image features)
 - Custom fusion classifier
 
-## Status
-In progress
+## Results
+- Training accuracy: 66.93% (5 epochs)
+- Test accuracy: Approximately 62-63% on 974 unseen posts.
+- Baseline (random guessing): 33%
+
+## What I learned
+- Text features (BERT) carry more sentiment than just images alone
+- Multimodal fusion improves over single-modality baselines
+- The variety of real-world social media data (various languages, memes, sarcasm) can make
+  sentiment classification difficult
+
+## Future Improvements
+- Train for more epochs
+- Swap ResNet18 for ResNet50
+- Fine-tune final BERT layer 
+- Build a demo interface to test on other social media posts
+
